@@ -1,0 +1,73 @@
+---
+title: "EvOWL Analytics"
+author: "Nicolas Matentzoglu"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::readthedown:
+    highlight: kate
+    html_document: default 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Prepare
+
+```{r libs}
+library(SPARQL) # SPARQL querying package
+library(ggplot2)
+```
+
+# Load Data
+
+```{r}
+# Step 1 - Set up preliminaries and define query
+# Define the data.gov endpoint
+endpoint <- "http://localhost:8080/rdf4j-workbench/repositories/evowl_one/query"
+
+# create query statement
+query <-
+"PREFIX mowl: <http://ontothenextone.net/mowl.owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?measure ?metric ?value ?instrument ?date ?title ?o 
+WHERE {
+  ?o mowl:hasMeasurement ?measure . 
+  ?o ^<http://www.w3.org/ns/dcat#distribution> ?oboiri .
+  ?oboiri <http://purl.org/dc/elements/1.1/title> ?title . 
+  ?measure rdf:type ?metric .
+  ?metric rdfs:subClassOf mowl:Measurement . 
+  ?metric mowl:machineReadableLabel ?metric_label . 
+  ?measure mowl:hasMeasurementValue ?value . 
+  ?measure mowl:hasMeasurementInstrument ?instrument . 
+  ?measure mowl:hasRecordingDate ?date . 
+   FILTER (?metric != mowl:Measurement && ?instrument = 'metrics.harvest.oa5-0.0.1-jar-with-dependencies.jar')
+}"
+
+
+# Step 2 - Use SPARQL package to submit query and save results to a data frame
+qd <- SPARQL(endpoint,query)
+df <- qd$results
+df$measure<-NULL
+
+```
+
+# Peprocess
+```{r prepr}
+df_m<-reshape(df,direction = "wide",timevar = "metric",idvar = c("o","instrument","date","title"))
+names(df_m)<-gsub("value.<http://ontothenextone.net/mowl.owl#","",names(df_m))
+names(df_m)<-gsub(">","",names(df_m))
+df_m$logical_axiom_count_incl<-as.numeric(df_m$logical_axiom_count_incl)
+df_vio<-data.frame(apply(df_m[grepl("viol_",names(df_m))], 2, function(x) as.numeric(as.character(x))))
+df_axt<-data.frame(apply(df_m[grepl("axt_",names(df_m))], 2, function(x) as.numeric(as.character(x))))
+df_exp<-data.frame(apply(df_m[grepl("exp_",names(df_m))], 2, function(x) as.numeric(as.character(x))))
+df_const<-data.frame(apply(df_m[grepl("const_",names(df_m))], 2, function(x) as.logical(as.character(x))))
+df_dt<-data.frame(apply(df_m[grepl("dt_builtin_",names(df_m))], 2, function(x) as.numeric(as.character(x))))
+
+ggplot(df_m,aes(logical_axiom_count_incl)) + geom_histogram()
+```
+
+# Agreement between different OWLAPI versions
