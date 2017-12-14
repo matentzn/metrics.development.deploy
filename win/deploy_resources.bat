@@ -6,6 +6,7 @@ SET metricsharvestdeploy=%pipelineconfig%metrics.harvest.deploy\
 SET evowlowl=%pipelineconfig%ev.owl\ev.owl
 
 SET harvestpipeline=%metricsharvestdeploy%harvest\
+SET harvestjars=%metricsharvestdeploy%jars\
 SET harvestpipelineurl=%harvestpipeline%url
 SET harvestpipelinefile=%harvestpipeline%file
 
@@ -27,7 +28,8 @@ SET wsmetricsharvestoa4=%workspace%metrics.harvest.oa4\target\metrics.harvest.oa
 SET wsmetricsharvestoa5=%workspace%metrics.harvest.oa5\target\metrics.harvest.oa5-0.0.1-jar-with-dependencies.jar
 SET wsmetricsharvesthermit=%workspace%metrics.harvest.hermit\target\metrics.harvest.hermit-0.0.1-jar-with-dependencies.jar
 SET wsmetricsserverurl=%workspace%metrics.harvest.url\target\metrics.harvest.url-0.0.1-jar-with-dependencies.jar
-SET wsmetricspostresult=%workspace%metrics.exampleclient\target\metrics.exampleclient-0.0.1-jar-with-dependencies.jar
+SET wsmetricspostresult=%workspace%metrics.exampleclient\target\evowl-post-metrics.jar
+SET wsmetricsgetoids=%workspace%metrics.exampleclient\target\evowl-get-oids.jar
 
 :: Update jars in pipeline directory
 @RD /S /Q %harvestpipeline%
@@ -47,6 +49,8 @@ xcopy %wsmetricsharvesthermit% %harvestpipelinefile%
 :: Update webapps in deployment webapp directory
 xcopy /y %evowlowl% %metricsserverdeploy%
 xcopy /y %wsmetricspostresult% %deployjars%
+xcopy /y %wsmetricspostresult% %harvestjars%
+xcopy /y %wsmetricsgetoids% %harvestjars%
 xcopy /y %wsmetricsserver% %deploywebapps%
 xcopy /y %wsowlbadge% %deploywebapps%
 xcopy /y %wsevowlui% %deploywebapps%
